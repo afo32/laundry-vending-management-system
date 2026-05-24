@@ -1,117 +1,154 @@
-# Laundry & Vending Management System
-
-A full‑stack management platform designed for small laundry and vending machine businesses.  
+Laundry & Vending Management System
+A full‑stack management platform designed for small laundry and vending machine businesses.
 The system includes product inventory, automatic product code generation, sales tracking, purchase tracking, authentication, and category/subcategory logic for vending products.
 
 Built with:
 
-- **Backend:** Python, Flask, SQLAlchemy  
-- **Frontend:** React, Bootstrap  
-- **Database:** PostgreSQL / MySQL / SQLite (configurable)
+Backend: Python, Flask, SQLAlchemy
 
----
+Frontend: React, Bootstrap
 
-## 🚀 Features
+Database: PostgreSQL / MySQL / SQLite (configurable)
 
-### 🧺 Laundry & Vending Inventory
-- Manage all products across two main categories:
-  - **Laundry**
-  - **Vending**
-- Vending products include **subcategories**:
-  - Beverage  
-  - Chuches (Candy)  
-  - Parapharmacy  
-  - Smoking  
-  - Coffee  
-- Each product stores:
-  - Name  
-  - Category  
-  - Subcategory (if vending)  
-  - Stock  
-  - Price  
-  - Auto‑generated product code  
+🚀 Features
+🧺 Laundry & Vending Inventory
+Manage all products across two main categories:
 
----
+Laundry
 
-## 🔤 Automatic Product Code Generation
+Vending
 
+Vending products include subcategories:
+
+Beverage
+
+Candy
+
+Parapharmacy
+
+Smoking
+
+Coffee
+
+Each product stores:
+
+Name
+
+Category
+
+Subcategory (if vending)
+
+Stock
+
+Price
+
+Auto‑generated product code
+
+🔤 Automatic Product Code Generation
 The system generates product codes automatically based on:
 
-1. **Subcategory initial(s)**  
-2. **Initials of the product name**
+Subcategory initials
+
+Initials of the product name
 
 Examples:
 
-| Product | Subcategory | Code |
-|--------|-------------|------|
-| Coca Cola Lata 330ml | Beverage | **BCCL** |
-| Aros Fresa | Chuches | **CHAF** |
-| Durex Dame Placer | Parapharmacy | **PDDP** |
-| OCB Filtro Slim | Smoking | **FOFS** |
+Product	Subcategory	Code
+Coca Cola Can 330ml	Beverage	BCCL
+Aros Fresa	Candy	CHAF
+Durex Dame Placer	Parapharmacy	PDDP
+OCB Filtro Slim	Smoking	FOFS
 
-Codes contain **no numbers**, following the business logic defined in the original Excel system.
 
----
+Codes contain no numbers, following the business logic defined in the original Excel system.
 
-## 💰 Sales Module
-- Create new sales
-- Select product manually or **search by product code**
-- Automatic total calculation
-- Filter sales by:
-  - Category  
-  - Product  
-  - Date  
-  - Machine (for vending)
+💰 Sales Module
+Create new sales
 
----
+Select product manually or search by product code
 
-## 📦 Purchases Module
-- Register new purchases
-- Optional fields:
-  - Supplier  
-  - Invoice number  
-  - Notes  
-- Search products by code
-- Automatic stock updates (optional extension)
+Automatic total calculation (computed, not stored)
 
----
+Filter sales by:
 
-## 📊 Inventory Module
-- View inventory by category:
-  - Laundry
-  - Vending
-- Stock level indicators (low stock highlighted)
-- Edit stock directly
-- Add new products from inventory pages
+Category
 
----
+Product
 
-## 🔐 Authentication
+Date
+
+Machine (for vending)
+
+Laundry sales do not require a product ID
+
+Vending sales require a valid product ID (integer)
+
+📦 Purchases Module
+Register new purchases
+
+Optional fields:
+
+Supplier
+
+Invoice number
+
+Notes
+
+Search products by code
+
+Automatic stock updates (optional extension)
+
+📊 Inventory Module
+View inventory by category:
+
+Laundry
+
+Vending
+
+Stock level indicators (low stock highlighted)
+
+Edit stock directly
+
+Add new products from inventory pages
+
+🔐 Authentication
 All backend routes are protected using JWT‑based authentication.
+CORS is configured to allow React frontend requests.
 
----
-
-## 🧱 Backend Structure
-
+🧱 Backend Structure
+Código
 app/
 ├── routes/
 │    ├── productos.py
 │    ├── ventas.py
 │    ├── compras.py
-│    └── auth.py
+│    ├── gastos.py
+│    ├── inventario.py
+│    ├── maquinas.py
+│    ├── auth.py
+│    └── reportes.py
 ├── models/
 │    ├── productos.py
 │    ├── ventas.py
-│    └── compras.py
+│    ├── compras.py
+│    └── gastos.py
 ├── utils/
 │    └── auth_required.py
-└── database.py
+├── database.py
+└── __init__.py   ← Blueprint registration
+🔧 Blueprint Registration (Updated)
+All report routes are now correctly registered under:
 
+Código
+/reportes/...
+In app/__init__.py:
 
----
+python
+app.register_blueprint(reportes_bp, url_prefix="/reportes")
+And all internal routes inside reportes.py were cleaned to remove duplicated prefixes.
 
-## 🎨 Frontend Structure
-
+🎨 Frontend Structure
+Código
 src/
 ├── pages/
 │    ├── ventas/
@@ -126,46 +163,80 @@ src/
 ├── components/
 │    └── BotonNuevoProducto.jsx
 └── App.jsx
+🔧 Frontend Fixes (Updated Today)
+producto_id is now correctly sent:
 
+Laundry: null
 
----
+Vending: Number(productoId)
 
-## 🔍 Product Code Search
+Sales creation no longer sends a total field
 
-Both **sales** and **purchases** include a search bar:
+Report routes now call:
 
-- Enter a product code (e.g., `BCCL`, `CHAF`, `PDDP`)
-- The system automatically selects the matching product
-- Errors are shown if the code does not exist
+js
+fetch(`http://127.0.0.1:5000/reportes/ventas-dia?categoria=${categoria}`)
+📈 Reports Module (Updated)
+/reportes/ventas-dia
+Shows daily sales grouped by date
 
----
+Laundry and vending handled separately:
 
-## 🛠️ Technologies Used
+Laundry → no product join
 
-### Backend
-- Python 3
-- Flask
-- SQLAlchemy
-- JWT Authentication
+Vending → join with products table
 
-### Frontend
-- React
-- Bootstrap
-- Fetch API
+Other report routes:
+/reportes/ventas-maquina
 
----
+/reportes/ventas-producto
 
-## 📌 Future Improvements
+/reportes/compras-mes
 
-- Barcode / QR scanning for product codes  
-- Automatic stock updates from sales/purchases  
-- Dashboard with charts  
-- Import products directly from Excel  
-- Multi‑user roles (admin, employee)  
+/reportes/gastos-categoria
 
----
+/reportes/stock-bajo
 
-## 📄 License
+/reportes/beneficio
 
+All routes now work under the unified /reportes prefix.
+
+🔍 Product Code Search
+Both sales and purchases include a search bar:
+
+Enter a product code (e.g., BCCL, CHAF, PDDP)
+
+The system automatically selects the matching product
+
+Errors are shown if the code does not exist
+
+🛠️ Technologies Used
+Backend
+Python 3
+
+Flask
+
+SQLAlchemy
+
+JWT Authentication
+
+Frontend
+React
+
+Bootstrap
+
+Fetch API
+
+📌 Future Improvements
+Barcode / QR scanning for product codes
+
+Automatic stock updates from sales/purchases
+
+Dashboard with charts
+
+Import products directly from Excel
+
+Multi‑user roles (admin, employee)
+
+📄 License
 This project is private and intended for personal business use.
-
