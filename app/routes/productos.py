@@ -175,3 +175,25 @@ def buscar_por_codigo(codigo):
         "precio": p.precio
     })
 
+@productos_bp.route("/buscar", methods=["GET"])
+@auth_required
+def buscar_productos():
+    q = request.args.get("q", "").upper()
+
+    if not q:
+        return jsonify([])
+
+    productos = Producto.query.filter(Producto.codigo.like(f"%{q}%")).all()
+
+    return jsonify([
+        {
+            "id": p.id,
+            "codigo": p.codigo,
+            "nombre": p.nombre,
+            "categoria": p.categoria,
+            "subcategoria": p.subcategoria,
+            "stock": p.stock,
+            "precio": p.precio
+        }
+        for p in productos
+    ])

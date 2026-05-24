@@ -8,7 +8,6 @@ export default function InventarioNuevo() {
   const [categoria, setCategoria] = useState("lavadoras");
   const [stock, setStock] = useState(0);
   const [precio, setPrecio] = useState("");
-  const [codigo, setCodigo] = useState("");
   const [subcategoria, setSubcategoria] = useState("");
 
   function guardar(e) {
@@ -71,15 +70,6 @@ export default function InventarioNuevo() {
             className="form-control"
             value={nombre}
             onChange={(e) => setNombre(e.target.value)}
-          />
-        </div>
-
-        <div className="mb-3">
-          <label className="form-label">Código del producto</label>
-          <input
-            className="form-control"
-            value={codigo}
-            onChange={(e) => setCodigo(e.target.value)}
           />
         </div>
 

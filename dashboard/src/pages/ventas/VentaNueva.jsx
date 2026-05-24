@@ -7,15 +7,17 @@ export default function VentaNueva() {
   const [categoria, setCategoria] = useState("lavadoras");
   const [productos, setProductos] = useState([]);
   const [productoId, setProductoId] = useState("");
+  const [maquinaId, setMaquinaId] = useState("");
   const [maquina, setMaquina] = useState("");
   const [cantidad, setCantidad] = useState(1);
   const [precio, setPrecio] = useState("");
   const [fecha, setFecha] = useState("");
   const [codigoBusqueda, setCodigoBusqueda] = useState("");
   const [errorCodigo, setErrorCodigo] = useState("");
+  const [sugerencias, setSugerencias] = useState([]);
 
   const maquinasLavadoras = ["L1", "L2", "L3", "S1", "S2", "IS1", "IS2"];
-  const maquinasVending = ["V1", "V2", "V3"];
+  const maquinasVending = ["Cafetera", "Comida"];
 
   // Cargar productos según categoría
   useEffect(() => {
@@ -56,10 +58,57 @@ export default function VentaNueva() {
       });
   }
 
-  function guardarVenta(e) {
-    e.preventDefault();
+  function handleCodigoChange(e) {
+    const value = e.target.value.toUpperCase();
+    setCodigoBusqueda(value);
+
+    if (value.length === 0) {
+      setSugerencias([]);
+      return;
+    }
 
     const token = localStorage.getItem("token");
+
+    fetch(`http://127.0.0.1:5000/productos/buscar?q=${value}`, {
+      headers: { Authorization: "Bearer " + token },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.length === 0) {
+          setErrorCodigo("No results");
+          setSugerencias([]);
+        } else {
+          setErrorCodigo("");
+          setSugerencias(data);
+        }
+      });
+  }
+
+  function seleccionarProducto(producto) {
+    setProductoId(producto.id);
+    setCodigoBusqueda(producto.codigo);
+    setSugerencias([]);
+    setMaquinaId(maquina.id);
+  }
+
+  function guardarVenta() {
+    const token = localStorage.getItem("token");
+
+    const body = {
+      cantidad: Number(cantidad),
+      precio: Number(precio),
+      fecha: new Date().toISOString().slice(0, 10),
+    };
+
+    if (categoria === "vending") {
+      body.producto_id = Number(productoId); // <--- ENTERO
+      body.maquina_id = 1;
+    }
+
+    if (categoria === "lavadoras") {
+      body.producto_id = null; // <--- NULL
+      body.maquina_id = 1;
+    }
 
     fetch("http://127.0.0.1:5000/ventas", {
       method: "POST",
@@ -67,15 +116,12 @@ export default function VentaNueva() {
         "Content-Type": "application/json",
         Authorization: "Bearer " + token,
       },
-      body: JSON.stringify({
-        categoria,
-        producto_id: productoId,
-        maquina,
-        cantidad,
-        precio,
-        fecha,
-      }),
-    }).then(() => navigate(-1)); // volver a la página anterior
+      body: JSON.stringify(body),
+    })
+      .then((res) => res.json())
+      .then(() => {
+        navigate(`/reportes/ventas-dia/${categoria}`);
+      });
   }
 
   return (
@@ -113,23 +159,32 @@ export default function VentaNueva() {
           </select>
         </div>
 
-        <div className="mb-3">
-          <label className="form-label">Buscar por código</label>
-          <div className="input-group">
-            <input
-              className="form-control"
-              value={codigoBusqueda}
-              onChange={(e) => setCodigoBusqueda(e.target.value.toUpperCase())}
-              placeholder="Ej: BCCL, CHAF, PDDP..."
-            />
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={buscarProductoPorCodigo}
+        <div className="mb-3 position-relative">
+          <label className="form-label">Search by code</label>
+          <input
+            className="form-control"
+            value={codigoBusqueda}
+            onChange={handleCodigoChange}
+            placeholder="Type product code..."
+          />
+
+          {sugerencias.length > 0 && (
+            <ul
+              className="list-group position-absolute w-100"
+              style={{ zIndex: 10 }}
             >
-              Buscar
-            </button>
-          </div>
+              {sugerencias.map((s) => (
+                <li
+                  key={s.id}
+                  className="list-group-item list-group-item-action"
+                  onClick={() => seleccionarProducto(s)}
+                >
+                  <strong>{s.codigo}</strong> — {s.nombre}
+                </li>
+              ))}
+            </ul>
+          )}
+
           {errorCodigo && <small className="text-danger">{errorCodigo}</small>}
         </div>
 

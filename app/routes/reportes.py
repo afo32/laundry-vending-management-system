@@ -9,42 +9,49 @@ from sqlalchemy import func
 
 reportes_bp = Blueprint("reportes", __name__)
 
-@reportes_bp.route("/reportes/ventas-dia", methods=["GET"])
+@reportes_bp.route("/ventas-dia", methods=["GET"])
 @auth_required
 def ventas_por_dia():
-    desde = request.args.get("desde")
-    hasta = request.args.get("hasta")
-
-    query = db.session.query(
-        func.date(Venta.fecha).label("dia"),
-        func.sum(Venta.total).label("total")
-    )
-
-    if desde:
-        query = query.filter(Venta.fecha >= desde)
-    if hasta:
-        query = query.filter(Venta.fecha <= hasta)
-        
     categoria = request.args.get("categoria")
 
     if categoria == "lavadoras":
-        query = query.filter(Venta.tipo == "lavadora")
+        query = (
+            db.session.query(
+                func.date(Venta.fecha).label("fecha"),
+                func.sum(Venta.cantidad).label("cantidad"),
+                func.sum(Venta.precio * Venta.cantidad).label("total")
+            )
+            .filter(Venta.maquina_id == 1)  # lavadora 1
+            .group_by(func.date(Venta.fecha))
+            .order_by(func.date(Venta.fecha))
+        )
+    else:
+        query = (
+            db.session.query(
+                func.date(Venta.fecha).label("fecha"),
+                func.sum(Venta.cantidad).label("cantidad"),
+                func.sum(Venta.precio * Venta.cantidad).label("total")
+            )
+            .join(Producto)
+            .filter(Producto.categoria == categoria)
+            .group_by(func.date(Venta.fecha))
+            .order_by(func.date(Venta.fecha))
+        )
 
-    if categoria == "vending":
-        query = query.filter(Venta.tipo == "vending")
+    resultados = [
+        {
+            "fecha": str(r.fecha),
+            "cantidad": r.cantidad,
+            "total": float(r.total)
+        }
+        for r in query.all()
+    ]
+
+    return jsonify(resultados)
 
 
-    resultados = (
-        query.group_by(func.date(Venta.fecha))
-             .order_by(func.date(Venta.fecha))
-             .all()
-    )
 
-    data = [{"dia": str(r.dia), "total": float(r.total)} for r in resultados]
-    return jsonify(data)
-
-
-@reportes_bp.route("/reportes/ventas-maquina", methods=["GET"])
+@reportes_bp.route("/ventas-maquina", methods=["GET"])
 @auth_required
 def ventas_por_maquina():
     maquina_id = request.args.get("maquina_id")
@@ -69,7 +76,7 @@ def ventas_por_maquina():
     return jsonify(data)
 
 
-@reportes_bp.route("/reportes/ventas-producto", methods=["GET"])
+@reportes_bp.route("/ventas-producto", methods=["GET"])
 @auth_required
 def ventas_por_producto():
     producto_id = request.args.get("producto_id")
@@ -105,7 +112,7 @@ def ventas_por_producto():
     return jsonify(data)
 
 
-@reportes_bp.route("/reportes/compras-mes", methods=["GET"])
+@reportes_bp.route("/compras-mes", methods=["GET"])
 @auth_required
 def compras_por_mes():
     desde = request.args.get("desde")
@@ -127,7 +134,7 @@ def compras_por_mes():
     return jsonify(data)
 
 
-@reportes_bp.route("/reportes/gastos-categoria", methods=["GET"])
+@reportes_bp.route("/gastos-categoria", methods=["GET"])
 @auth_required
 def gastos_por_categoria():
     categoria = request.args.get("categoria")
@@ -152,7 +159,7 @@ def gastos_por_categoria():
     return jsonify(data)
 
 
-@reportes_bp.route("/reportes/stock-bajo", methods=["GET"])
+@reportes_bp.route("/stock-bajo", methods=["GET"])
 @auth_required
 def stock_bajo():
     productos = Producto.query.filter(Producto.stock_actual < 5).all()
@@ -166,7 +173,7 @@ def stock_bajo():
     ]
     return jsonify(data)
 
-@reportes_bp.route("/reportes/beneficio", methods=["GET"])
+@reportes_bp.route("/beneficio", methods=["GET"])
 @auth_required
 def beneficio():
     desde = request.args.get("desde")

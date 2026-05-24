@@ -84,15 +84,26 @@ def obtener_venta(id):
 def crear_venta():
     data = request.get_json()
 
-    categoria = data.get("categoria")
     producto_id = data.get("producto_id")
     maquina = data.get("maquina")
     cantidad = data.get("cantidad")
     precio = data.get("precio")
     fecha = data.get("fecha")
+    
+    producto_id = data.get("producto_id")
+    maquina_id = data.get("maquina_id")
 
-    if not categoria or not producto_id or not cantidad or not precio:
+    # Si es lavadora, permitir producto_id = None
+    if producto_id is None:
+        pass
+    # Si es vending, debe ser entero
+    elif not isinstance(producto_id, int):
+        return {"error": "producto_id debe ser un entero"}
+
+    
+    if not producto_id or not cantidad or not precio:
         return jsonify({"error": "Faltan campos obligatorios"}), 400
+
 
     try:
         fecha_dt = datetime.strptime(fecha, "%Y-%m-%d") if fecha else datetime.now()
@@ -100,13 +111,13 @@ def crear_venta():
         fecha_dt = datetime.now()
 
     nueva = Venta(
-        categoria=categoria,
-        producto_id=producto_id,
-        maquina=maquina,
-        cantidad=int(cantidad),
-        precio=float(precio),
-        fecha=fecha_dt
-    )
+    cantidad=cantidad,
+    precio=precio,
+    fecha=fecha,
+    producto_id=producto_id,
+    maquina_id=maquina_id
+)
+
 
     db.session.add(nueva)
     db.session.commit()

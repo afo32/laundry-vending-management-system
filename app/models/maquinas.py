@@ -8,7 +8,9 @@ class Maquina(db.Model):
     tipo = db.Column(db.String(50), nullable=False)  # lavadora, secadora, vending
     ubicacion = db.Column(db.String(150))
     estado = db.Column(db.String(50), default="activa")
+    
 
-    ventas = db.relationship("Venta", back_populates="maquina")
+    ventas = db.relationship("Venta", backref="maquina", lazy=True)
+
     def __repr__(self):
         return f"<Maquina {self.nombre} ({self.tipo})>"

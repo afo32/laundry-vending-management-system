@@ -17,6 +17,7 @@ export default function CompraNueva() {
   const [fecha, setFecha] = useState("");
   const [codigoBusqueda, setCodigoBusqueda] = useState("");
   const [errorCodigo, setErrorCodigo] = useState("");
+  const [sugerencias, setSugerencias] = useState([]);
 
   // Cargar productos según categoría
   useEffect(() => {
@@ -54,6 +55,38 @@ export default function CompraNueva() {
         setErrorCodigo("");
         setProductoId(data.id);
       });
+  }
+
+  function handleCodigoChange(e) {
+    const value = e.target.value.toUpperCase();
+    setCodigoBusqueda(value);
+
+    if (value.length === 0) {
+      setSugerencias([]);
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+
+    fetch(`http://127.0.0.1:5000/productos/buscar?q=${value}`, {
+      headers: { Authorization: "Bearer " + token },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.length === 0) {
+          setErrorCodigo("No results");
+          setSugerencias([]);
+        } else {
+          setErrorCodigo("");
+          setSugerencias(data);
+        }
+      });
+  }
+
+  function seleccionarProducto(producto) {
+    setProductoId(producto.id);
+    setCodigoBusqueda(producto.codigo);
+    setSugerencias([]);
   }
 
   function guardarCompra(e) {
@@ -98,23 +131,32 @@ export default function CompraNueva() {
           </select>
         </div>
 
-        <div className="mb-3">
-          <label className="form-label">Buscar por código</label>
-          <div className="input-group">
-            <input
-              className="form-control"
-              value={codigoBusqueda}
-              onChange={(e) => setCodigoBusqueda(e.target.value.toUpperCase())}
-              placeholder="Ej: BCCL, CHAF, PDDP..."
-            />
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={buscarProductoPorCodigo}
+        <div className="mb-3 position-relative">
+          <label className="form-label">Search by code</label>
+          <input
+            className="form-control"
+            value={codigoBusqueda}
+            onChange={handleCodigoChange}
+            placeholder="Type product code..."
+          />
+
+          {sugerencias.length > 0 && (
+            <ul
+              className="list-group position-absolute w-100"
+              style={{ zIndex: 10 }}
             >
-              Buscar
-            </button>
-          </div>
+              {sugerencias.map((s) => (
+                <li
+                  key={s.id}
+                  className="list-group-item list-group-item-action"
+                  onClick={() => seleccionarProducto(s)}
+                >
+                  <strong>{s.codigo}</strong> — {s.nombre}
+                </li>
+              ))}
+            </ul>
+          )}
+
           {errorCodigo && <small className="text-danger">{errorCodigo}</small>}
         </div>
 

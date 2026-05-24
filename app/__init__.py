@@ -37,7 +37,8 @@ def create_app():
     app.register_blueprint(gastos_bp)
     app.register_blueprint(inventario_bp)
     app.register_blueprint(auth_bp)
-    app.register_blueprint(reportes_bp)
+    app.register_blueprint(reportes_bp, url_prefix="/reportes")
+
 
     # Rutas públicas
     EXCLUDED_ROUTES = {"/login"}
