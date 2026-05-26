@@ -1,62 +1,52 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export default function VentaNueva() {
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const [categoria, setCategoria] = useState("lavadoras");
+  // Categoría viene desde navigate()
+  const categoria = location.state?.categoria;
+
+  const diaId = location.state?.dia_id;
+
   const [productos, setProductos] = useState([]);
   const [productoId, setProductoId] = useState("");
-  const [maquinaId, setMaquinaId] = useState("");
-  const [maquina, setMaquina] = useState("");
+
+  const [maquinas, setMaquinas] = useState([]); // ← LISTA REAL DE MÁQUINAS
+  const [maquinaId, setMaquinaId] = useState(""); // ← ID REAL DE LA MÁQUINA
+
   const [cantidad, setCantidad] = useState(1);
   const [precio, setPrecio] = useState("");
   const [fecha, setFecha] = useState("");
+
   const [codigoBusqueda, setCodigoBusqueda] = useState("");
   const [errorCodigo, setErrorCodigo] = useState("");
   const [sugerencias, setSugerencias] = useState([]);
 
-  const maquinasLavadoras = ["L1", "L2", "L3", "S1", "S2", "IS1", "IS2"];
-  const maquinasVending = ["Cafetera", "Comida"];
+  // Cargar productos SOLO si es vending
+  useEffect(() => {
+    if (categoria !== "vending") return;
 
-  // Cargar productos según categoría
+    const token = localStorage.getItem("token");
+
+    fetch(`http://127.0.0.1:5000/productos?categoria=vending`, {
+      headers: { Authorization: "Bearer " + token },
+    })
+      .then((res) => res.json())
+      .then((data) => setProductos(Array.isArray(data) ? data : []));
+  }, [categoria]);
+
+  // Cargar máquinas reales desde el backend
   useEffect(() => {
     const token = localStorage.getItem("token");
 
-    fetch(`http://127.0.0.1:5000/productos?categoria=${categoria}`, {
+    fetch(`http://127.0.0.1:5000/maquinas?tipo=${categoria}`, {
       headers: { Authorization: "Bearer " + token },
     })
       .then((res) => res.json())
-      .then((data) => {
-        console.log("RESPUESTA PRODUCTOS:", data);
-        setProductos(
-          Array.isArray(data)
-            ? data
-            : Array.isArray(data.productos)
-              ? data.productos
-              : [],
-        );
-      })
-      .catch((err) => console.error("ERROR FETCH:", err));
+      .then((data) => setMaquinas(Array.isArray(data) ? data : []));
   }, [categoria]);
-
-  function buscarProductoPorCodigo() {
-    const token = localStorage.getItem("token");
-
-    fetch(`http://127.0.0.1:5000/productos/buscar/${codigoBusqueda}`, {
-      headers: { Authorization: "Bearer " + token },
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.error) {
-          setErrorCodigo("Código no encontrado");
-          return;
-        }
-
-        setErrorCodigo("");
-        setProductoId(data.id); // selecciona el producto automáticamente
-      });
-  }
 
   function handleCodigoChange(e) {
     const value = e.target.value.toUpperCase();
@@ -74,13 +64,12 @@ export default function VentaNueva() {
     })
       .then((res) => res.json())
       .then((data) => {
-        if (data.length === 0) {
-          setErrorCodigo("No results");
+        if (!Array.isArray(data)) {
           setSugerencias([]);
-        } else {
-          setErrorCodigo("");
-          setSugerencias(data);
+          return;
         }
+        setErrorCodigo("");
+        setSugerencias(data);
       });
   }
 
@@ -88,26 +77,32 @@ export default function VentaNueva() {
     setProductoId(producto.id);
     setCodigoBusqueda(producto.codigo);
     setSugerencias([]);
-    setMaquinaId(maquina.id);
   }
 
-  function guardarVenta() {
+  function guardarVenta(e) {
+    e.preventDefault();
+
+    if (!maquinaId) {
+      alert("Debes seleccionar una máquina");
+      return;
+    }
+
     const token = localStorage.getItem("token");
 
+    // PRIMERO declaramos body
     const body = {
       cantidad: Number(cantidad),
       precio: Number(precio),
-      fecha: new Date().toISOString().slice(0, 10),
+      fecha: fecha || new Date().toISOString().slice(0, 10),
+      maquina_id: maquinaId,
+      dia_id: diaId,
     };
 
+    // LUEGO añadimos producto_id según categoría
     if (categoria === "vending") {
-      body.producto_id = Number(productoId); // <--- ENTERO
-      body.maquina_id = 1;
-    }
-
-    if (categoria === "lavadoras") {
-      body.producto_id = null; // <--- NULL
-      body.maquina_id = 1;
+      body.producto_id = Number(productoId);
+    } else {
+      body.producto_id = null;
     }
 
     fetch("http://127.0.0.1:5000/ventas", {
@@ -119,91 +114,83 @@ export default function VentaNueva() {
       body: JSON.stringify(body),
     })
       .then((res) => res.json())
-      .then(() => {
-        navigate(`/reportes/ventas-dia/${categoria}`);
-      });
+      .then(() => navigate(`/ventas/dia/${diaId}`));
   }
 
   return (
     <div className="container py-4">
       <h2>Nueva Venta</h2>
 
+      <p>
+        <strong>Categoría:</strong> {categoria}
+      </p>
+
       <form onSubmit={guardarVenta} className="mt-3">
-        {/* Categoría */}
-        <div className="mb-3">
-          <label className="form-label">Categoría</label>
-          <select
-            className="form-select"
-            value={categoria}
-            onChange={(e) => setCategoria(e.target.value)}
-          >
-            <option value="lavadoras">Lavadoras</option>
-            <option value="vending">Vending</option>
-          </select>
-        </div>
+        {/* Producto SOLO si es vending */}
+        {categoria === "vending" && (
+          <>
+            <div className="mb-3">
+              <label className="form-label">Producto</label>
+              <select
+                className="form-select"
+                value={productoId}
+                onChange={(e) => setProductoId(e.target.value)}
+              >
+                <option value="">Selecciona un producto</option>
+                {productos.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-        {/* Producto */}
-        <div className="mb-3">
-          <label className="form-label">Producto</label>
-          <select
-            className="form-select"
-            value={productoId}
-            onChange={(e) => setProductoId(e.target.value)}
-          >
-            <option value="">Selecciona un producto</option>
-            {productos.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.nombre}
-              </option>
-            ))}
-          </select>
-        </div>
+            <div className="mb-3 position-relative">
+              <label className="form-label">Buscar por código</label>
+              <input
+                className="form-control"
+                value={codigoBusqueda}
+                onChange={handleCodigoChange}
+                placeholder="Escribe el código..."
+              />
 
-        <div className="mb-3 position-relative">
-          <label className="form-label">Search by code</label>
-          <input
-            className="form-control"
-            value={codigoBusqueda}
-            onChange={handleCodigoChange}
-            placeholder="Type product code..."
-          />
-
-          {sugerencias.length > 0 && (
-            <ul
-              className="list-group position-absolute w-100"
-              style={{ zIndex: 10 }}
-            >
-              {sugerencias.map((s) => (
-                <li
-                  key={s.id}
-                  className="list-group-item list-group-item-action"
-                  onClick={() => seleccionarProducto(s)}
+              {sugerencias.length > 0 && (
+                <ul
+                  className="list-group position-absolute w-100"
+                  style={{ zIndex: 10 }}
                 >
-                  <strong>{s.codigo}</strong> — {s.nombre}
-                </li>
-              ))}
-            </ul>
-          )}
+                  {sugerencias.map((s) => (
+                    <li
+                      key={s.id}
+                      className="list-group-item list-group-item-action"
+                      onClick={() => seleccionarProducto(s)}
+                    >
+                      <strong>{s.codigo}</strong> — {s.nombre}
+                    </li>
+                  ))}
+                </ul>
+              )}
 
-          {errorCodigo && <small className="text-danger">{errorCodigo}</small>}
-        </div>
+              {errorCodigo && (
+                <small className="text-danger">{errorCodigo}</small>
+              )}
+            </div>
+          </>
+        )}
 
         {/* Máquina */}
         <div className="mb-3">
           <label className="form-label">Máquina</label>
           <select
             className="form-select"
-            value={maquina}
-            onChange={(e) => setMaquina(e.target.value)}
+            value={maquinaId}
+            onChange={(e) => setMaquinaId(Number(e.target.value))}
           >
             <option value="">Selecciona una máquina</option>
 
-            {(categoria === "lavadoras"
-              ? maquinasLavadoras
-              : maquinasVending
-            ).map((m) => (
-              <option key={m} value={m}>
-                {m}
+            {maquinas.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.nombre}
               </option>
             ))}
           </select>

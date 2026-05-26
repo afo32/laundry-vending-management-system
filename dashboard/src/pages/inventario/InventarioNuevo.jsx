@@ -54,7 +54,8 @@ export default function InventarioNuevo() {
             value={subcategoria}
             onChange={(e) => setSubcategoria(e.target.value)}
           >
-            <option value="bebida">Bebida</option>
+            <option value="">Selecciona subcategoría</option>
+            <option value="bebidas">Bebidas</option>
             <option value="chuches">Chuches</option>
             <option value="parafarmacia">Parafarmacia</option>
             <option value="fumar">Fumar</option>

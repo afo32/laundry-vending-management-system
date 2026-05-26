@@ -26,6 +26,26 @@ export default function InventarioVending() {
       });
   }, []);
 
+  function eliminarProducto(id) {
+    if (!window.confirm("¿Seguro que quieres eliminar este producto?")) {
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+
+    fetch(`http://127.0.0.1:5000/productos/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: "Bearer " + token,
+      },
+    })
+      .then((res) => res.json())
+      .then(() => {
+        // Actualizar lista sin recargar
+        setProductos((prev) => prev.filter((p) => p.id !== id));
+      });
+  }
+
   return (
     <div className="container py-4">
       <h2>Inventario – Vending</h2>
@@ -49,12 +69,19 @@ export default function InventarioVending() {
               <td className={p.stock < 5 ? "text-danger fw-bold" : ""}>
                 {p.stock}
               </td>
-              <td className="text-end">
+              <td className="text-end d-flex gap-2 justify-content-end">
                 <button
                   className="btn btn-sm btn-warning"
                   onClick={() => navigate(`/inventario/editar/${p.id}`)}
                 >
-                  Editar stock
+                  Editar
+                </button>
+
+                <button
+                  className="btn btn-sm btn-danger"
+                  onClick={() => eliminarProducto(p.id)}
+                >
+                  Eliminar
                 </button>
               </td>
             </tr>
