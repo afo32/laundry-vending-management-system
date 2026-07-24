@@ -10,7 +10,7 @@ export default function DiaVenta() {
   useEffect(() => {
     const token = localStorage.getItem("token");
 
-    fetch(`http://127.0.0.1:5000/ventas/dia/${diaId}`, {
+    fetch(`${import.meta.env.VITE_API_URL}/ventas/dia/${diaId}`, {
       headers: { Authorization: "Bearer " + token },
     })
       .then((res) => res.json())

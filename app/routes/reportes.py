@@ -4,6 +4,8 @@ from app.models.ventas import Venta
 from app.models.compras import Compra
 from app.models.gastos import Gasto
 from app.models.productos import Producto
+from app.models.maquinas import Maquina
+
 from app.utils.auth_required import auth_required
 from sqlalchemy import func
 
@@ -12,44 +14,50 @@ reportes_bp = Blueprint("reportes", __name__)
 @reportes_bp.route("/ventas-dia", methods=["GET"])
 @auth_required
 def ventas_por_dia():
-    categoria = request.args.get("categoria")
+    categoria = request.args.get("categoria")  # "lavanderia" o "vending"
+    fecha_inicio = request.args.get("fecha_inicio")
+    fecha_fin = request.args.get("fecha_fin")
 
-    if categoria == "lavadoras":
-        query = (
-            db.session.query(
-                func.date(Venta.fecha).label("fecha"),
-                func.sum(Venta.cantidad).label("cantidad"),
-                func.sum(Venta.precio * Venta.cantidad).label("total")
-            )
-            .filter(Venta.maquina_id == 1)  # lavadora 1
-            .group_by(func.date(Venta.fecha))
-            .order_by(func.date(Venta.fecha))
-        )
+    # Determinar qué tipos de máquina corresponden a cada categoría
+    if categoria == "lavanderia":
+        tipos = ["lavadora", "secadora"]
+    elif categoria == "vending":
+        tipos = ["vending", "cafe"]
     else:
-        query = (
-            db.session.query(
-                func.date(Venta.fecha).label("fecha"),
-                func.sum(Venta.cantidad).label("cantidad"),
-                func.sum(Venta.precio * Venta.cantidad).label("total")
-            )
-            .join(Producto)
-            .filter(Producto.categoria == categoria)
-            .group_by(func.date(Venta.fecha))
-            .order_by(func.date(Venta.fecha))
-        )
+        tipos = ["lavadora", "secadora", "vending", "cafe"]  # sin filtro = todo
 
-    resultados = [
+    query = (
+        db.session.query(
+            func.date(Venta.fecha).label("dia"),
+            func.sum(Venta.cantidad * Venta.precio).label("total"),
+            func.sum(Venta.cantidad).label("unidades")
+        )
+        .join(Maquina, Maquina.id == Venta.maquina_id)  # outerjoin si puede no tener maquina
+        .filter(Maquina.tipo.in_(tipos))
+    )
+
+    if fecha_inicio:
+        query = query.filter(Venta.fecha >= fecha_inicio)
+    if fecha_fin:
+        query = query.filter(Venta.fecha <= fecha_fin + " 23:59:59")
+
+    resultados = (
+        query
+        .group_by(func.date(Venta.fecha))
+        .order_by(func.date(Venta.fecha).desc())
+        .all()
+    )
+
+    data = [
         {
-            "fecha": str(r.fecha),
-            "cantidad": r.cantidad,
-            "total": float(r.total)
+            "dia": str(r.dia),
+            "total": round(float(r.total), 2),
+            "unidades": int(r.unidades)
         }
-        for r in query.all()
+        for r in resultados
     ]
 
-    return jsonify(resultados)
-
-
+    return jsonify(data)
 
 @reportes_bp.route("/ventas-maquina", methods=["GET"])
 @auth_required
@@ -82,35 +90,39 @@ def ventas_por_producto():
     producto_id = request.args.get("producto_id")
     desde = request.args.get("desde")
     hasta = request.args.get("hasta")
+    categoria = request.args.get("categoria")
 
     query = (
         db.session.query(
+            Producto.id,
             Producto.nombre,
             func.sum(Venta.cantidad).label("cantidad"),
-            func.sum(Venta.total).label("total")
+            func.sum(Venta.cantidad * Venta.precio).label("total")
         )
         .join(Producto, Producto.id == Venta.producto_id)
     )
 
+    if categoria:
+        query = query.filter(Producto.categoria == categoria)
     if producto_id:
         query = query.filter(Venta.producto_id == producto_id)
     if desde:
         query = query.filter(Venta.fecha >= desde)
     if hasta:
-        query = query.filter(Venta.fecha <= hasta)
+        query = query.filter(Venta.fecha <= hasta + " 23:59:59")
 
-    resultados = query.group_by(Producto.nombre).all()
+    resultados = query.group_by(Producto.id, Producto.nombre).all()
 
     data = [
         {
+            "producto_id": r.id,
             "producto": r.nombre,
             "cantidad": int(r.cantidad),
-            "total": float(r.total)
+            "total": round(float(r.total), 2)
         }
         for r in resultados
     ]
     return jsonify(data)
-
 
 @reportes_bp.route("/compras-mes", methods=["GET"])
 @auth_required

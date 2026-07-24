@@ -5,68 +5,106 @@ export default function InventarioNuevo() {
   const navigate = useNavigate();
 
   const [nombre, setNombre] = useState("");
-  const [categoria, setCategoria] = useState("lavadoras");
+  const [categoria, setCategoria] = useState("lavanderia");
   const [stock, setStock] = useState(0);
-  const [precio, setPrecio] = useState("");
+  const [precioCompra, setPrecioCompra] = useState("");
   const [subcategoria, setSubcategoria] = useState("");
+  const [error, setError] = useState("");
 
   function guardar(e) {
     e.preventDefault();
+    setError("");
 
+    if (!nombre) {
+      setError("El nombre es obligatorio");
+      return;
+    }
+    if (categoria === "vending" && !subcategoria) {
+      setError("Seleccioná una subcategoría");
+      return;
+    }
     const token = localStorage.getItem("token");
 
-    fetch("http://127.0.0.1:5000/productos", {
+    const body = {
+      nombre,
+      categoria,
+      subcategoria,
+      stock: Number(stock),
+    };
+
+    if (categoria === "vending") {
+      body.precio_compra = Number(precioCompra) || 0;
+    }
+
+    fetch(`${import.meta.env.VITE_API_URL}/productos`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: "Bearer " + token,
       },
-      body: JSON.stringify({
-        nombre,
-        categoria,
-        subcategoria,
-        stock,
-        precio,
-      }),
-    }).then(() => navigate(-1));
+      body: JSON.stringify(body),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) {
+          setError(data.error);
+          return;
+        }
+        navigate(-1);
+      });
   }
 
   return (
-    <div className="container py-4">
-      <h2>Nuevo Producto</h2>
-      <div className="mb-3">
-        <label className="form-label">Categoría</label>
-        <select
-          className="form-select"
-          value={categoria}
-          onChange={(e) => setCategoria(e.target.value)}
-        >
-          <option value="lavadoras">Lavadoras</option>
-          <option value="vending">Vending</option>
-        </select>
-      </div>
+    <div className="container py-4" style={{ maxWidth: 480 }}>
+      <button
+        className="btn btn-link p-0 text-secondary mb-2"
+        onClick={() => navigate(-1)}
+      >
+        ← Volver
+      </button>
+      <h2 className="mb-4">Nuevo Producto</h2>
 
-      {categoria === "vending" && (
+      {error && <div className="alert alert-danger">{error}</div>}
+
+      <form onSubmit={guardar}>
+        {/* Categoría */}
         <div className="mb-3">
-          <label className="form-label">Subcategoría</label>
+          <label className="form-label fw-semibold">Categoría</label>
           <select
             className="form-select"
-            value={subcategoria}
-            onChange={(e) => setSubcategoria(e.target.value)}
+            value={categoria}
+            onChange={(e) => {
+              setCategoria(e.target.value);
+              setSubcategoria("");
+            }}
           >
-            <option value="">Selecciona subcategoría</option>
-            <option value="bebidas">Bebidas</option>
-            <option value="chuches">Chuches</option>
-            <option value="parafarmacia">Parafarmacia</option>
-            <option value="fumar">Fumar</option>
-            <option value="cafetera">Cafetera</option>
+            <option value="lavanderia">Lavandería</option>
+            <option value="vending">Vending</option>
           </select>
         </div>
-      )}
 
-      <form onSubmit={guardar} className="mt-3">
+        {/* Subcategoría — solo vending */}
+        {categoria === "vending" && (
+          <div className="mb-3">
+            <label className="form-label fw-semibold">Subcategoría</label>
+            <select
+              className="form-select"
+              value={subcategoria}
+              onChange={(e) => setSubcategoria(e.target.value)}
+            >
+              <option value="">Seleccioná una subcategoría</option>
+              <option value="bebidas">Bebidas</option>
+              <option value="chuches">Chuches</option>
+              <option value="parafarmacia">Parafarmacia</option>
+              <option value="fumar">Fumar</option>
+              <option value="cafetera">Cafetera</option>
+            </select>
+          </div>
+        )}
+
+        {/* Nombre */}
         <div className="mb-3">
-          <label className="form-label">Nombre del producto</label>
+          <label className="form-label fw-semibold">Nombre del producto</label>
           <input
             className="form-control"
             value={nombre}
@@ -74,27 +112,41 @@ export default function InventarioNuevo() {
           />
         </div>
 
-        <div className="mb-3">
-          <label className="form-label">Stock inicial</label>
-          <input
-            type="number"
-            className="form-control"
-            value={stock}
-            onChange={(e) => setStock(e.target.value)}
-          />
-        </div>
+        {/* Stock — solo vending */}
+        {categoria === "vending" && (
+          <div className="mb-3">
+            <label className="form-label fw-semibold">Stock inicial</label>
+            <input
+              type="number"
+              min="0"
+              className="form-control"
+              value={stock}
+              onChange={(e) => setStock(e.target.value)}
+            />
+          </div>
+        )}
 
-        <div className="mb-3">
-          <label className="form-label">Precio (€)</label>
-          <input
-            type="number"
-            className="form-control"
-            value={precio}
-            onChange={(e) => setPrecio(e.target.value)}
-          />
-        </div>
+        {/* Precio compra — solo vending */}
+        {categoria === "vending" && (
+          <div className="mb-3">
+            <label className="form-label fw-semibold">
+              Precio de compra (€)
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              className="form-control"
+              value={precioCompra}
+              onChange={(e) => setPrecioCompra(e.target.value)}
+            />
+            <div className="form-text">Lo que te cuesta a vos el producto.</div>
+          </div>
+        )}
 
-        <button className="btn btn-success">Guardar Producto</button>
+        <button type="submit" className="btn btn-success w-100">
+          Guardar Producto
+        </button>
       </form>
     </div>
   );

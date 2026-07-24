@@ -4,6 +4,7 @@ from app.models.ventas import Venta
 from app.models.productos import Producto
 from app.utils.auth_required import auth_required
 from datetime import datetime
+from app.models import VentaDia
 
 ventas_bp = Blueprint("ventas", __name__, url_prefix="/ventas")
 
@@ -85,44 +86,39 @@ def crear_venta():
     data = request.get_json()
 
     producto_id = data.get("producto_id")
-    maquina = data.get("maquina")
+    maquina_id = data.get("maquina_id")
     cantidad = data.get("cantidad")
     precio = data.get("precio")
     fecha = data.get("fecha")
-    
-    producto_id = data.get("producto_id")
-    maquina_id = data.get("maquina_id")
+    dia_id = data.get("dia_id")
 
-    # Si es lavadora, permitir producto_id = None
-    if producto_id is None:
-        pass
-    # Si es vending, debe ser entero
-    elif not isinstance(producto_id, int):
-        return {"error": "producto_id debe ser un entero"}
 
-    
-    if not producto_id or not cantidad or not precio:
-        return jsonify({"error": "Faltan campos obligatorios"}), 400
+    # Validación correcta
+    if producto_id is not None and not isinstance(producto_id, int):
+        return jsonify({"error": "producto_id debe ser entero o null"}), 400
 
+    if cantidad is None or precio is None:
+        return jsonify({"error": "cantidad y precio son obligatorios"}), 400
 
     try:
         fecha_dt = datetime.strptime(fecha, "%Y-%m-%d") if fecha else datetime.now()
     except:
         fecha_dt = datetime.now()
 
-    nueva = Venta(
-    cantidad=cantidad,
-    precio=precio,
-    fecha=fecha,
-    producto_id=producto_id,
-    maquina_id=maquina_id
-)
-
-
+    # CREACIÓN SEGURA (sin kwargs)
+    nueva = Venta()
+    nueva.producto_id = producto_id
+    nueva.maquina_id = maquina_id
+    nueva.cantidad = cantidad
+    nueva.precio = precio
+    nueva.fecha = fecha_dt
+    nueva.dia_id = dia_id
+    
     db.session.add(nueva)
     db.session.commit()
 
     return jsonify({"message": "Venta creada correctamente", "id": nueva.id}), 201
+
 
 
 # -----------------------------------
@@ -163,3 +159,62 @@ def eliminar_venta(id):
     db.session.commit()
 
     return jsonify({"message": "Venta eliminada correctamente"})
+
+@ventas_bp.route("/bulk", methods=["POST"])
+@auth_required
+def crear_ventas_bulk():
+    data = request.get_json()
+
+    fecha_str = data.get("fecha")
+    categoria = data.get("categoria")
+    maquina_id = data.get("maquina_id")  # opcional para lavanderia
+    items = data.get("items", [])
+
+    if not fecha_str or not categoria or not items:
+        return jsonify({"error": "fecha, categoria e items son obligatorios"}), 400
+
+    # maquina_id solo obligatorio para vending
+    if categoria == "vending" and not maquina_id:
+        return jsonify({"error": "maquina_id es obligatorio para vending"}), 400
+
+    try:
+        fecha_dt = datetime.strptime(fecha_str, "%Y-%m-%d").date()
+    except:
+        return jsonify({"error": "Formato de fecha inválido, usar YYYY-MM-DD"}), 400
+
+    venta_dia = VentaDia()
+    venta_dia.fecha = fecha_dt
+    venta_dia.categoria = categoria
+    db.session.add(venta_dia)
+    db.session.flush()
+
+    for item in items:
+        producto_id = item.get("producto_id")
+        cantidad = item.get("cantidad")
+        precio = item.get("precio")
+
+        if cantidad is None or precio is None:
+            db.session.rollback()
+            return jsonify({"error": "Cada item necesita cantidad y precio"}), 400
+
+        v = Venta()
+        v.producto_id = producto_id
+        v.maquina_id = maquina_id if categoria == "vending" else None
+        v.cantidad = int(cantidad)
+        v.precio = float(precio)
+        v.fecha = fecha_dt
+        v.dia_id = venta_dia.id
+        db.session.add(v)
+        
+        if producto_id and categoria == "vending":
+            producto = Producto.query.get(producto_id)
+            if producto:
+                producto.stock = max(0, producto.stock - int(cantidad))
+
+    db.session.commit()
+
+    return jsonify({
+        "message": "Ventas guardadas correctamente",
+        "venta_dia_id": venta_dia.id,
+        "total_items": len(items)
+    }), 201

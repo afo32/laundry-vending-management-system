@@ -73,6 +73,18 @@ export default function Dashboard() {
             </button>
           </div>
         </div>
+        {/* Caja */}
+        <div className="col-md-4">
+          <div className="card shadow-sm p-3">
+            <h4>Caja</h4>
+            <button
+              className="btn btn-info w-100 mt-2 text-white"
+              onClick={() => navigate("/caja")}
+            >
+              Ver Caja
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

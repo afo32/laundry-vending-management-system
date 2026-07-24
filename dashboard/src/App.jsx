@@ -25,6 +25,16 @@ import InventarioVending from "./pages/inventario/InventarioVending";
 import InventarioEditar from "./pages/inventario/InventarioEditar";
 import InventarioNuevo from "./pages/inventario/InventarioNuevo";
 import VentasPorDiaCategoria from "./pages/reportes/VentasPorDiaCategoria";
+import Caja from "./pages/Caja";
+import CajaMaquinas from "./pages/caja/CajaMaquinas";
+import CajaGanancia from "./pages/caja/CajaGanancia";
+import CajaCambio from "./pages/caja/CajaCambio";
+import CajaDiario from "./pages/caja/CajaDiario";
+import CajaTrimestral from "./pages/caja/CajaTrimestral";
+import CajaMaquinasResumen from "./pages/caja/CajaMaquinasResumen";
+import PagosPrestamo from "./pages/gastos/PagosPrestamo";
+import GastosMensuales from "./pages/gastos/GastosMensuales";
+import Merma from "./pages/gastos/Merma";
 
 function App() {
   return (
@@ -228,8 +238,97 @@ function App() {
               </PrivateRoute>
             }
           />
+          <Route
+            path="/caja"
+            element={
+              <PrivateRoute>
+                <Caja />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/caja"
+            element={
+              <PrivateRoute>
+                <Caja />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/caja/maquinas"
+            element={
+              <PrivateRoute>
+                <CajaMaquinas />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/caja/ganancia"
+            element={
+              <PrivateRoute>
+                <CajaGanancia />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/caja/cambio"
+            element={
+              <PrivateRoute>
+                <CajaCambio />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/caja/diario"
+            element={
+              <PrivateRoute>
+                <CajaDiario />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/caja/trimestral"
+            element={
+              <PrivateRoute>
+                <CajaTrimestral />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/caja/maquinas-resumen"
+            element={
+              <PrivateRoute>
+                <CajaMaquinasResumen />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/gastos/pagos-prestamo"
+            element={
+              <PrivateRoute>
+                <PagosPrestamo />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/gastos/mensuales"
+            element={
+              <PrivateRoute>
+                <GastosMensuales />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/gastos/merma"
+            element={
+              <PrivateRoute>
+                <Merma />
+              </PrivateRoute>
+            }
+          />
         </Route>
         <Route path="/" element={<Login />} />
+        <Route path="/login" element={<Login />} />
       </Routes>
     </BrowserRouter>
   );

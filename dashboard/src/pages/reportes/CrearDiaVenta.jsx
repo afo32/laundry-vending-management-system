@@ -11,7 +11,7 @@ export default function CrearDiaVenta() {
   function crearDia() {
     const token = localStorage.getItem("token");
 
-    fetch("http://127.0.0.1:5000/ventas/dia", {
+    fetch(`${import.meta.env.VITE_API_URL}/ventas/dia`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

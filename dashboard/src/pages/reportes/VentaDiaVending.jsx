@@ -10,7 +10,7 @@ export default function ReportesVentasDia() {
   useEffect(() => {
     const token = localStorage.getItem("token");
 
-    fetch(`http://127.0.0.1:5000/ventas/dia?categoria=${categoria}`, {
+    fetch(`${import.meta.env.VITE_API_URL}/ventas/dia?categoria=${categoria}`, {
       headers: { Authorization: "Bearer " + token },
     })
       .then((res) => res.json())

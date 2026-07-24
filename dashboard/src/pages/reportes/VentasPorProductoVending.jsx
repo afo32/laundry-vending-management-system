@@ -9,7 +9,7 @@ export default function VentasPorProductoVending() {
   useEffect(() => {
     const token = localStorage.getItem("token");
 
-    fetch("http://127.0.0.1:5000/productos?categoria=vending", {
+    fetch(`${import.meta.env.VITE_API_URL}/productos?categoria=vending`, {
       headers: { Authorization: "Bearer " + token },
     })
       .then((res) => res.json())

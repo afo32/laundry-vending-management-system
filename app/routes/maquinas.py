@@ -4,9 +4,16 @@ from app.models.maquinas import Maquina
 
 maquinas_bp = Blueprint("maquinas", __name__)
 
-@maquinas_bp.route("/maquinas", methods=["GET"])
+# GET /maquinas
+@maquinas_bp.route("", methods=["GET"])
 def listar_maquinas():
-    maquinas = Maquina.query.all()
+    tipo = request.args.get("tipo")
+
+    if tipo:
+        maquinas = Maquina.query.filter_by(tipo=tipo).all()
+    else:
+        maquinas = Maquina.query.all()
+
     return jsonify([{
         "id": m.id,
         "nombre": m.nombre,
@@ -15,7 +22,8 @@ def listar_maquinas():
         "estado": m.estado
     } for m in maquinas])
 
-@maquinas_bp.route("/maquinas", methods=["POST"])
+# POST /maquinas
+@maquinas_bp.route("", methods=["POST"])
 def crear_maquina():
     data = request.json
     maquina = Maquina(
@@ -27,7 +35,9 @@ def crear_maquina():
     db.session.add(maquina)
     db.session.commit()
     return jsonify({"message": "Máquina creada", "id": maquina.id})
-@maquinas_bp.route("/maquinas/<int:id>", methods=["PUT"])
+
+# PUT /maquinas/<id>
+@maquinas_bp.route("/<int:id>", methods=["PUT"])
 def actualizar_maquina(id):
     maquina = Maquina.query.get_or_404(id)
     data = request.json

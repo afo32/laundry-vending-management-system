@@ -9,7 +9,7 @@ export default function VentasPorProductoLavadoras() {
   useEffect(() => {
     const token = localStorage.getItem("token");
 
-    fetch("http://127.0.0.1:5000/productos?categoria=lavadoras", {
+    fetch(`${import.meta.env.VITE_API_URL}/productos?categoria=lavadoras`, {
       headers: { Authorization: "Bearer " + token },
     })
       .then((res) => res.json())

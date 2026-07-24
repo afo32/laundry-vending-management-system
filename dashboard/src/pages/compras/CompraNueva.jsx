@@ -23,7 +23,7 @@ export default function CompraNueva() {
   useEffect(() => {
     const token = localStorage.getItem("token");
 
-    fetch(`http://127.0.0.1:5000/productos?categoria=${categoria}`, {
+    fetch(`${import.meta.env.VITE_API_URL}/productos?categoria=${categoria}`, {
       headers: { Authorization: "Bearer " + token },
     })
       .then((res) => res.json())
@@ -42,7 +42,7 @@ export default function CompraNueva() {
   function buscarProductoPorCodigo() {
     const token = localStorage.getItem("token");
 
-    fetch(`http://127.0.0.1:5000/productos/buscar/${codigoBusqueda}`, {
+    fetch(`${import.meta.env.VITE_API_URL}/productos/buscar/${codigoBusqueda}`, {
       headers: { Authorization: "Bearer " + token },
     })
       .then((res) => res.json())
@@ -68,7 +68,7 @@ export default function CompraNueva() {
 
     const token = localStorage.getItem("token");
 
-    fetch(`http://127.0.0.1:5000/productos/buscar?q=${value}`, {
+    fetch(`${import.meta.env.VITE_API_URL}/productos/buscar?q=${value}`, {
       headers: { Authorization: "Bearer " + token },
     })
       .then((res) => res.json())
@@ -94,7 +94,7 @@ export default function CompraNueva() {
 
     const token = localStorage.getItem("token");
 
-    fetch("http://127.0.0.1:5000/compras", {
+    fetch(`${import.meta.env.VITE_API_URL}/compras`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

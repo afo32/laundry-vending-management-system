@@ -16,42 +16,34 @@ compras_bp = Blueprint("compras", __name__, url_prefix="/compras")
 def obtener_compras():
     categoria = request.args.get("categoria")
     producto_id = request.args.get("producto_id")
-    fecha = request.args.get("fecha")
+    desde = request.args.get("desde")
+    hasta = request.args.get("hasta")
 
-    query = Compra.query
+    query = Compra.query.join(Producto)
 
     if categoria:
-        query = query.filter(Compra.categoria == categoria)
-
+        query = query.filter(Producto.categoria == categoria)
     if producto_id:
         query = query.filter(Compra.producto_id == producto_id)
-
-    if fecha:
-        try:
-            fecha_dt = datetime.strptime(fecha, "%Y-%m-%d")
-            query = query.filter(db.func.date(Compra.fecha) == fecha_dt.date())
-        except:
-            pass
+    if desde:
+        query = query.filter(Compra.fecha >= desde)
+    if hasta:
+        query = query.filter(Compra.fecha <= hasta + " 23:59:59")
 
     compras = query.order_by(Compra.fecha.desc()).all()
 
     return jsonify([
-        {
-            "id": c.id,
-            "categoria": c.categoria,
-            "producto_id": c.producto_id,
-            "producto": c.producto.nombre if c.producto else None,
-            "cantidad": c.cantidad,
-            "precio": c.precio,
-            "total": c.cantidad * c.precio,
-            "fecha": c.fecha.strftime("%Y-%m-%d"),
-            "proveedor": c.proveedor,
-            "factura": c.factura,
-            "notas": c.notas
-
-        }
-        for c in compras
-    ])
+    {
+        "id": c.id,
+        "producto_id": c.producto_id,
+        "producto": c.producto.nombre if c.producto else None,
+        "cantidad": c.cantidad,
+        "precio": c.precio_unitario or 0,
+        "total": c.costo_total or 0,
+        "fecha": c.fecha.strftime("%Y-%m-%d"),
+    }
+    for c in compras
+])
 
 
 # -----------------------------------
@@ -62,16 +54,17 @@ def obtener_compras():
 def obtener_compra(id):
     compra = Compra.query.get_or_404(id)
 
-    return jsonify({
+    return jsonify([
+    {
         "id": compra.id,
-        "categoria": compra.categoria,
         "producto_id": compra.producto_id,
         "producto": compra.producto.nombre if compra.producto else None,
         "cantidad": compra.cantidad,
-        "precio": compra.precio,
-        "total": compra.cantidad * compra.precio,
-        "fecha": compra.fecha.strftime("%Y-%m-%d")
-    })
+        "precio": compra.costo_total / compra.cantidad if compra.cantidad and compra.costo_total else 0,
+        "total": compra.costo_total or 0,
+        "fecha": compra.fecha.strftime("%Y-%m-%d"),
+    }
+])
 
 
 # -----------------------------------

@@ -12,7 +12,7 @@ export default function GastoEditar() {
   useEffect(() => {
     const token = localStorage.getItem("token");
 
-    fetch(`http://127.0.0.1:5000/gastos/${id}`, {
+    fetch(`${import.meta.env.VITE_API_URL}/gastos/${id}`, {
       headers: { Authorization: "Bearer " + token },
     })
       .then((res) => res.json())
@@ -28,7 +28,7 @@ export default function GastoEditar() {
 
     const token = localStorage.getItem("token");
 
-    fetch(`http://127.0.0.1:5000/gastos/${id}`, {
+    fetch(`${import.meta.env.VITE_API_URL}/gastos/${id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",

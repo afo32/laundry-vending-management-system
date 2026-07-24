@@ -4,58 +4,82 @@ import { useParams, useNavigate } from "react-router-dom";
 export default function EditarProducto() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const token = localStorage.getItem("token");
 
   const [nombre, setNombre] = useState("");
-  const [codigo, setCodigo] = useState("");
-  const [subcategoria, setSubcategoria] = useState("");
-  const [stock, setStock] = useState(0);
+  const [precio, setPrecio] = useState("");
+  const [precioCompra, setPrecioCompra] = useState("");
+  const [categoria, setCategoria] = useState("");
+  const [cargando, setCargando] = useState(true);
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const token = localStorage.getItem("token")?.replace(/"/g, "");
-
-    fetch(`http://127.0.0.1:5000/productos/${id}`, {
+    fetch(`${import.meta.env.VITE_API_URL}/productos/${id}`, {
       headers: { Authorization: "Bearer " + token },
     })
       .then((res) => res.json())
       .then((p) => {
         setNombre(p.nombre || "");
-        setCodigo(p.codigo || "");
-        setSubcategoria(p.subcategoria || "");
-        setStock(p.stock ?? 0);
+        setPrecio(p.precio ?? "");
+        setPrecioCompra(p.precio_compra ?? "");
+        setCategoria(p.categoria || "");
+        setCargando(false);
       });
   }, [id]);
 
-  function guardarCambios(e) {
+  function volver() {
+    if (categoria === "lavanderia") navigate("/inventario/lavadoras");
+    else navigate("/inventario/vending");
+  }
+
+  async function guardarCambios(e) {
     e.preventDefault();
+    setError("");
 
-    const token = localStorage.getItem("token");
+    if (!precio || Number(precio) <= 0) {
+      setError("El precio de venta debe ser mayor que 0");
+      return;
+    }
 
-    const body = {
-      nombre,
-      codigo,
-      subcategoria,
-      stock: Number(stock),
-    };
+    setGuardando(true);
 
-    fetch(`http://127.0.0.1:5000/productos/${id}`, {
+    const body = { nombre, precio: Number(precio) };
+    if (categoria === "vending") {
+      body.precio_compra = Number(precioCompra);
+    }
+
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/productos/${id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
         Authorization: "Bearer " + token,
       },
       body: JSON.stringify(body),
-    })
-      .then((res) => res.json())
-      .then(() => navigate("/inventario/vending"));
+    });
+
+    if (res.ok) {
+      volver();
+    } else {
+      setError("Error al guardar");
+      setGuardando(false);
+    }
   }
 
-  return (
-    <div className="container py-4">
-      <h2>Editar Producto</h2>
+  if (cargando) return <div className="container py-4">Cargando...</div>;
 
-      <form onSubmit={guardarCambios} className="mt-3">
+  return (
+    <div className="container py-4" style={{ maxWidth: 480 }}>
+      <button className="btn btn-link p-0 text-secondary mb-2" onClick={volver}>
+        ← Volver
+      </button>
+      <h2 className="mb-4">Editar — {nombre}</h2>
+
+      {error && <div className="alert alert-danger">{error}</div>}
+
+      <form onSubmit={guardarCambios}>
         <div className="mb-3">
-          <label className="form-label">Nombre</label>
+          <label className="form-label fw-semibold">Nombre</label>
           <input
             className="form-control"
             value={nombre}
@@ -63,41 +87,68 @@ export default function EditarProducto() {
           />
         </div>
 
-        <div className="mb-3">
-          <label className="form-label">Código</label>
-          <input
-            className="form-control"
-            value={codigo}
-            onChange={(e) => setCodigo(e.target.value)}
-          />
-        </div>
+        {/* Precio compra — solo vending */}
+        {categoria === "vending" && (
+          <div className="mb-3">
+            <label className="form-label fw-semibold">
+              Precio de compra (€)
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              className="form-control"
+              value={precioCompra}
+              onChange={(e) => setPrecioCompra(e.target.value)}
+            />
+            <div className="form-text">Lo que te cuesta a vos el producto.</div>
+          </div>
+        )}
 
-        <div className="mb-3">
-          <label className="form-label">Subcategoría</label>
-          <select
-            className="form-select"
-            value={subcategoria}
-            onChange={(e) => setSubcategoria(e.target.value)}
-          >
-            <option value="bebidas">Bebidas</option>
-            <option value="chuches">Chuches</option>
-            <option value="parafarmacia">Parafarmacia</option>
-            <option value="fumar">Fumar</option>
-            <option value="cafetera">Cafetera</option>
-          </select>
-        </div>
-
-        <div className="mb-3">
-          <label className="form-label">Stock</label>
+        <div className="mb-4">
+          <label className="form-label fw-semibold">
+            {categoria === "vending" ? "Precio de venta (€)" : "Precio (€)"}
+          </label>
           <input
             type="number"
+            step="0.01"
+            min="0"
             className="form-control"
-            value={stock}
-            onChange={(e) => setStock(e.target.value)}
+            value={precio}
+            onChange={(e) => setPrecio(e.target.value)}
           />
+          <div className="form-text">
+            El nuevo precio solo aplica a ventas futuras.
+          </div>
         </div>
 
-        <button className="btn btn-primary">Guardar cambios</button>
+        {/* Margen — solo vending, solo si ambos precios tienen valor */}
+        {categoria === "vending" &&
+          Number(precio) > 0 &&
+          Number(precioCompra) > 0 && (
+            <div className="alert alert-info py-2 mb-4">
+              Margen:{" "}
+              <strong>
+                {(
+                  ((Number(precio) - Number(precioCompra)) / Number(precio)) *
+                  100
+                ).toFixed(1)}
+                %
+              </strong>{" "}
+              · Beneficio por unidad:{" "}
+              <strong>
+                {(Number(precio) - Number(precioCompra)).toFixed(2)} €
+              </strong>
+            </div>
+          )}
+
+        <button
+          type="submit"
+          className="btn btn-primary w-100"
+          disabled={guardando}
+        >
+          {guardando ? "Guardando..." : "Guardar cambios"}
+        </button>
       </form>
     </div>
   );

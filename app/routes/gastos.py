@@ -13,7 +13,16 @@ gastos_bp = Blueprint("gastos", __name__, url_prefix="/gastos")
 @gastos_bp.route("", methods=["GET"])
 @auth_required
 def obtener_gastos():
-    gastos = Gasto.query.order_by(Gasto.fecha.desc()).all()
+    desde = request.args.get("desde")
+    hasta = request.args.get("hasta")
+
+    query = Gasto.query
+    if desde:
+        query = query.filter(Gasto.fecha >= desde)
+    if hasta:
+        query = query.filter(Gasto.fecha <= hasta + " 23:59:59")
+
+    gastos = query.order_by(Gasto.fecha.desc()).all()
 
     return jsonify([
         {
@@ -25,8 +34,6 @@ def obtener_gastos():
         }
         for g in gastos
     ])
-
-
 # --------------------------------
 # GET: Obtener un gasto por su ID
 # --------------------------------
@@ -53,25 +60,29 @@ def crear_gasto():
     data = request.get_json()
 
     descripcion = data.get("descripcion")
-    categoria = data.get("categoria")
+    categoria = data.get("categoria", "mensual")
     importe = data.get("importe")
+    fecha_str = data.get("fecha")
 
-    if not descripcion or not categoria or importe is None:
+    if not descripcion or importe is None:
         return jsonify({"error": "Faltan campos obligatorios"}), 400
+
+    try:
+        fecha = datetime.strptime(fecha_str, "%Y-%m-%d") if fecha_str else datetime.now()
+    except:
+        fecha = datetime.now()
 
     nuevo = Gasto(
         descripcion=descripcion,
         categoria=categoria,
         importe=float(importe),
-        fecha=datetime.now()
+        fecha=fecha
     )
 
     db.session.add(nuevo)
     db.session.commit()
 
     return jsonify({"message": "Gasto creado correctamente", "id": nuevo.id}), 201
-
-
 # -----------------------------
 # PUT: Editar un gasto existente
 # -----------------------------
