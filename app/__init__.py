@@ -45,7 +45,10 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
     import os
-    print("VARIABLES:", sorted(os.environ.keys()), flush=True)
+    print("SERVICIO:", os.environ.get("RAILWAY_SERVICE_ID"), os.environ.get("RAILWAY_SERVICE_NAME"), flush=True)
+    print("ENTORNO:", os.environ.get("RAILWAY_ENVIRONMENT_NAME"), flush=True)
+    print("DOMINIO:", os.environ.get("RAILWAY_PUBLIC_DOMAIN"), flush=True)
+    print("PROYECTO:", os.environ.get("RAILWAY_PROJECT_NAME"), flush=True)
 
     CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}}, expose_headers=["Authorization"])
 
