@@ -1,5 +1,5 @@
 import os
-from flask import send_from_directory, Flask, request
+from flask import app, send_from_directory, Flask, request
 from app.config import Config
 from app.database import db
 from flask_cors import CORS
@@ -44,6 +44,9 @@ STATIC_EXTENSIONS = (
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
+    import os
+    print("DATABASE_URL presente:", bool(os.environ.get("DATABASE_URL")), flush=True)
+    print("URI configurada:", bool(app.config.get("SQLALCHEMY_DATABASE_URI")), flush=True)
 
     CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}}, expose_headers=["Authorization"])
 
