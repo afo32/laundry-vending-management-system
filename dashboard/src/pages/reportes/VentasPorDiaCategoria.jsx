@@ -313,6 +313,18 @@ export default function VentasPorDiaCategoria() {
               </div>
             </div>
           )}
+          {/* Tabla Lavandería */}
+          {ventas.filter((v) => v.producto_categoria === "lavanderia").length >
+            0 && (
+            <div className="card mb-4">
+              <div className="card-header fw-semibold">🧺 Lavandería</div>
+              <div className="card-body p-0">
+                {renderTabla(
+                  ventas.filter((v) => v.producto_categoria === "lavanderia"),
+                )}
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

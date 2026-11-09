@@ -71,6 +71,12 @@ export default function Dashboard() {
             >
               Inventario General
             </button>
+            <button
+              className="btn btn-success w-100 mt-2"
+              onClick={() => navigate("/inventario/mensual")}
+            >
+              Inventario Mensual
+            </button>
           </div>
         </div>
         {/* Caja */}

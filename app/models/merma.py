@@ -9,5 +9,6 @@ class Merma(db.Model):
     cantidad = db.Column(db.Integer, nullable=False)
     fecha = db.Column(db.Date, nullable=False)
     creado_en = db.Column(db.DateTime, default=datetime.now)
+    origen = db.Column(db.String(20), default="manual")  # "manual" o "inventario"
 
     producto = db.relationship("Producto")

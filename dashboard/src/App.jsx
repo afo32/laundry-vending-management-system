@@ -35,6 +35,8 @@ import CajaMaquinasResumen from "./pages/caja/CajaMaquinasResumen";
 import PagosPrestamo from "./pages/gastos/PagosPrestamo";
 import GastosMensuales from "./pages/gastos/GastosMensuales";
 import Merma from "./pages/gastos/Merma";
+import InventarioMensual from "./pages/inventario/InventarioMensual";
+import InventarioMensualVending from "./pages/inventario/InventarioMensualVending";
 
 function App() {
   return (
@@ -327,6 +329,22 @@ function App() {
             }
           />
         </Route>
+        <Route
+          path="/inventario/mensual"
+          element={
+            <PrivateRoute>
+              <InventarioMensual />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/inventario/mensual/vending"
+          element={
+            <PrivateRoute>
+              <InventarioMensualVending />
+            </PrivateRoute>
+          }
+        />
         <Route path="/" element={<Login />} />
         <Route path="/login" element={<Login />} />
       </Routes>

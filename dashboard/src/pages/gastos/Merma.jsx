@@ -104,6 +104,54 @@ export default function Merma() {
   }
 
   const totalUnidades = mermas.reduce((a, m) => a + m.cantidad, 0);
+  const manuales = mermas.filter((m) => m.origen !== "inventario");
+  const deInventario = mermas.filter((m) => m.origen === "inventario");
+
+  function renderTablaMerma(lista, mensajeVacio) {
+    if (lista.length === 0) {
+      return <p className="text-muted p-3 mb-0">{mensajeVacio}</p>;
+    }
+    const total = lista.reduce((a, m) => a + m.cantidad, 0);
+
+    return (
+      <table className="table table-hover mb-0">
+        <thead className="table-light">
+          <tr>
+            <th>Fecha</th>
+            <th>Producto</th>
+            <th className="text-end">Cantidad</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {lista.map((m) => (
+            <tr key={m.id}>
+              <td className="text-muted">
+                {m.fecha.split("-").reverse().join("/")}
+              </td>
+              <td>{m.producto}</td>
+              <td className="text-end fw-semibold">{m.cantidad}</td>
+              <td className="text-end">
+                <button
+                  className="btn btn-sm btn-outline-danger"
+                  onClick={() => eliminar(m.id)}
+                >
+                  Eliminar
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot className="table-light">
+          <tr>
+            <th colSpan={2}>Total unidades</th>
+            <th className="text-end text-warning">{total}</th>
+            <th></th>
+          </tr>
+        </tfoot>
+      </table>
+    );
+  }
   const vendingProductos = productos.filter((p) => p.categoria === "vending");
   const cafeProductos = productos.filter((p) => p.categoria === "cafe");
 
@@ -245,62 +293,31 @@ export default function Merma() {
         </div>
       )}
 
-      {/* Resumen */}
-      {mermas.length > 0 && (
-        <div className="card border-0 bg-light mb-4">
-          <div className="card-body">
-            <div className="text-muted small">
-              Total unidades de merma este mes
-            </div>
-            <div className="fs-3 fw-bold text-warning">{totalUnidades}</div>
-          </div>
-        </div>
-      )}
-
-      {/* Tabla */}
-      <div className="card">
+      {/* Mermas manuales */}
+      <div className="card mb-4">
+        <div className="card-header fw-semibold">Mermas</div>
         <div className="card-body p-0">
           {cargando ? (
-            <p className="text-muted p-3">Cargando...</p>
-          ) : mermas.length === 0 ? (
-            <p className="text-muted p-3">No hay mermas en este mes.</p>
+            <p className="text-muted p-3 mb-0">Cargando...</p>
           ) : (
-            <table className="table table-hover mb-0">
-              <thead className="table-light">
-                <tr>
-                  <th>Fecha</th>
-                  <th>Producto</th>
-                  <th className="text-end">Cantidad</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {mermas.map((m) => (
-                  <tr key={m.id}>
-                    <td className="text-muted">
-                      {m.fecha.split("-").reverse().join("/")}
-                    </td>
-                    <td>{m.producto}</td>
-                    <td className="text-end fw-semibold">{m.cantidad}</td>
-                    <td className="text-end">
-                      <button
-                        className="btn btn-sm btn-outline-danger"
-                        onClick={() => eliminar(m.id)}
-                      >
-                        Eliminar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot className="table-light">
-                <tr>
-                  <th colSpan={2}>Total unidades</th>
-                  <th className="text-end text-warning">{totalUnidades}</th>
-                  <th></th>
-                </tr>
-              </tfoot>
-            </table>
+            renderTablaMerma(manuales, "No hay mermas en este mes.")
+          )}
+        </div>
+      </div>
+
+      {/* Mermas desde inventario */}
+      <div className="card">
+        <div className="card-header fw-semibold">
+          📦 Mermas desde inventario
+        </div>
+        <div className="card-body p-0">
+          {cargando ? (
+            <p className="text-muted p-3 mb-0">Cargando...</p>
+          ) : (
+            renderTablaMerma(
+              deInventario,
+              "No hay mermas desde inventario en este mes.",
+            )
           )}
         </div>
       </div>

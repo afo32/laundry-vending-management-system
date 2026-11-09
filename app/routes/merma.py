@@ -28,9 +28,11 @@ def listar_mermas():
             "producto": m.producto.nombre if m.producto else None,
             "cantidad": m.cantidad,
             "fecha": m.fecha.isoformat(),
+            "origen": m.origen or "manual",
         }
         for m in mermas
     ])
+
 
 @merma_bp.route("", methods=["POST"])
 @auth_required
@@ -40,16 +42,17 @@ def crear_merma():
     producto_id = data.get("producto_id")
     cantidad = data.get("cantidad")
     fecha_str = data.get("fecha")
+    origen = data.get("origen", "manual")
 
-    if not producto_id or not cantidad:
-        return jsonify({"error": "producto_id y cantidad son obligatorios"}), 400
+    if not producto_id or cantidad is None or int(cantidad) == 0:
+        return jsonify({"error": "producto_id y cantidad (distinta de 0) son obligatorios"}), 400
 
     try:
         fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date() if fecha_str else datetime.now().date()
     except:
         fecha = datetime.now().date()
 
-    # Descontar stock
+    # Positivo = baja el stock, negativo = lo sube
     producto = Producto.query.get_or_404(producto_id)
     producto.stock = max(0, producto.stock - int(cantidad))
 
@@ -57,6 +60,7 @@ def crear_merma():
     merma.producto_id = int(producto_id)
     merma.cantidad = int(cantidad)
     merma.fecha = fecha
+    merma.origen = origen
 
     db.session.add(merma)
     db.session.commit()
