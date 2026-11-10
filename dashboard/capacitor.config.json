@@ -1,0 +1,8 @@
+{
+  "appId": "com.lavanderia.app",
+  "appName": "Lavandería",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  }
+}

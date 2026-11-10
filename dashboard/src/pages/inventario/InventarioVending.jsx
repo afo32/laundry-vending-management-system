@@ -95,14 +95,21 @@ export default function InventarioVending() {
   const totalUnidades = ventas.reduce((a, v) => a + v.cantidad, 0);
   const totalEuros = ventas.reduce((a, v) => a + v.total, 0);
 
-  function eliminarProducto(id) {
+  async function eliminarProducto(id) {
     if (!window.confirm("¿Seguro que quieres eliminar este producto?")) return;
-    fetch(`${import.meta.env.VITE_API_URL}/productos/${id}`, {
+
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/productos/${id}`, {
       method: "DELETE",
       headers: { Authorization: "Bearer " + token },
-    })
-      .then((r) => r.json())
-      .then(() => setProductos((prev) => prev.filter((p) => p.id !== id)));
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error || "No se pudo eliminar");
+      return;
+    }
+
+    setProductos((prev) => prev.filter((p) => p.id !== id));
   }
 
   const vendingProductos = productos.filter((p) => p.categoria === "vending");

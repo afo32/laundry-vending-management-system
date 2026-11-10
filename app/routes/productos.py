@@ -4,6 +4,9 @@ from app.models.productos import Producto
 from app.utils.auth_required import auth_required
 from app.models.compras import Compra
 from datetime import datetime
+from app.models.compras import Compra
+from app.models.ventas import Venta
+from app.models.merma import Merma
 
 productos_bp = Blueprint("productos", __name__, url_prefix="/productos")
 
@@ -155,8 +158,19 @@ def editar_producto(id):
 def eliminar_producto(id):
     p = Producto.query.get_or_404(id)
 
-    db.session.delete(p)
-    db.session.commit()
+    if Venta.query.filter_by(producto_id=id).first():
+        return jsonify({
+            "error": "Este producto tiene ventas registradas y no se puede eliminar."
+        }), 409
+
+    try:
+        Compra.query.filter_by(producto_id=id).delete()
+        Merma.query.filter_by(producto_id=id).delete()
+        db.session.delete(p)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        return jsonify({"error": "No se pudo eliminar el producto."}), 409
 
     return jsonify({"message": "Producto eliminado"})
 
