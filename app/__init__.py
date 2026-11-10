@@ -27,6 +27,8 @@ from app.routes.cambio_urgente import cambio_urgente_bp
 
 from app.utils.auth_required import auth_required
 
+from app.seed import seed_datos
+
 # Rutas de API que requieren autenticación
 API_PREFIXES = (
     "/productos", "/ventas", "/compras", "/gastos", "/maquinas",
@@ -71,6 +73,10 @@ def create_app():
     app.register_blueprint(pago_prestamo_bp)
     app.register_blueprint(merma_bp)
     app.register_blueprint(cambio_urgente_bp)
+    
+    with app.app_context():
+        db.create_all()
+        seed_datos()
 
     @app.before_request
     def proteger_todo():
