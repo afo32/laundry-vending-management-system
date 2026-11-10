@@ -37,6 +37,7 @@ import GastosMensuales from "./pages/gastos/GastosMensuales";
 import Merma from "./pages/gastos/Merma";
 import InventarioMensual from "./pages/inventario/InventarioMensual";
 import InventarioMensualVending from "./pages/inventario/InventarioMensualVending";
+import RutinaSemanal from "./pages/gastos/RutinaSemanal";
 
 function App() {
   return (
@@ -342,6 +343,14 @@ function App() {
           element={
             <PrivateRoute>
               <InventarioMensualVending />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/gastos/rutina-semanal"
+          element={
+            <PrivateRoute>
+              <RutinaSemanal />
             </PrivateRoute>
           }
         />
