@@ -6,6 +6,7 @@ export default function Dashboard() {
   return (
     <div className="container py-5">
       <h1 className="mb-4">Panel de Control</h1>
+      <p className="text-muted small">Versión: 13-nov-A</p>
 
       <div className="row g-4">
         {/* Ventas */}
