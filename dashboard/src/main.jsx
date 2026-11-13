@@ -7,14 +7,12 @@ import { Capacitor } from "@capacitor/core";
 import { registerSW } from "virtual:pwa-register";
 
 if (Capacitor.isNativePlatform()) {
-  // Dentro de la app: eliminar cualquier service worker viejo
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker
       .getRegistrations()
       .then((regs) => regs.forEach((r) => r.unregister()));
   }
 } else {
-  // En la web: PWA normal
   registerSW({ immediate: true });
 }
 
