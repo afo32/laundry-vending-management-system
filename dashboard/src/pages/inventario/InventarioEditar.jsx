@@ -9,6 +9,7 @@ export default function EditarProducto() {
   const [nombre, setNombre] = useState("");
   const [precio, setPrecio] = useState("");
   const [precioCompra, setPrecioCompra] = useState("");
+  const [stock, setStock] = useState("");
   const [categoria, setCategoria] = useState("");
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
@@ -23,6 +24,7 @@ export default function EditarProducto() {
         setNombre(p.nombre || "");
         setPrecio(p.precio ?? "");
         setPrecioCompra(p.precio_compra ?? "");
+        setStock(p.stock ?? 0);
         setCategoria(p.categoria || "");
         setCargando(false);
       });
@@ -41,13 +43,15 @@ export default function EditarProducto() {
       setError("El precio de venta debe ser mayor que 0");
       return;
     }
+    if (stock === "" || Number(stock) < 0) {
+      setError("El stock no puede ser negativo");
+      return;
+    }
 
     setGuardando(true);
 
-    const body = { nombre, precio: Number(precio) };
-    if (categoria === "vending") {
-      body.precio_compra = Number(precioCompra);
-    }
+    const body = { nombre, precio: Number(precio), stock: Number(stock) };
+    if (categoria === "vending") body.precio_compra = Number(precioCompra);
 
     const res = await fetch(`${import.meta.env.VITE_API_URL}/productos/${id}`, {
       method: "PUT",
@@ -87,7 +91,20 @@ export default function EditarProducto() {
           />
         </div>
 
-        {/* Precio compra — solo vending */}
+        <div className="mb-3">
+          <label className="form-label fw-semibold">Stock</label>
+          <input
+            type="number"
+            min="0"
+            className="form-control"
+            value={stock}
+            onChange={(e) => setStock(e.target.value)}
+          />
+          <div className="form-text">
+            Corrige el stock a mano. No genera una compra ni una merma.
+          </div>
+        </div>
+
         {categoria === "vending" && (
           <div className="mb-3">
             <label className="form-label fw-semibold">
@@ -101,7 +118,6 @@ export default function EditarProducto() {
               value={precioCompra}
               onChange={(e) => setPrecioCompra(e.target.value)}
             />
-            <div className="form-text">Lo que te cuesta a vos el producto.</div>
           </div>
         )}
 
@@ -122,7 +138,6 @@ export default function EditarProducto() {
           </div>
         </div>
 
-        {/* Margen — solo vending, solo si ambos precios tienen valor */}
         {categoria === "vending" &&
           Number(precio) > 0 &&
           Number(precioCompra) > 0 && (
