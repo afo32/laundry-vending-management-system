@@ -12,6 +12,9 @@ if (Capacitor.isNativePlatform()) {
       .getRegistrations()
       .then((regs) => regs.forEach((r) => r.unregister()));
   }
+  if (window.caches) {
+    caches.keys().then((keys) => keys.forEach((k) => caches.delete(k)));
+  }
 } else {
   registerSW({ immediate: true });
 }
