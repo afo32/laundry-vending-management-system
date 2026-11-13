@@ -4,6 +4,8 @@ from app.models.compras import Compra
 from app.models.productos import Producto
 from app.utils.auth_required import auth_required
 from datetime import datetime
+from sqlalchemy import func
+from app.routes.productos import generar_codigo
 
 compras_bp = Blueprint("compras", __name__, url_prefix="/compras")
 
@@ -146,3 +148,72 @@ def eliminar_compra(id):
     db.session.commit()
 
     return jsonify({"message": "Compra eliminada correctamente"})
+
+@compras_bp.route("/rapida", methods=["POST"])
+@auth_required
+def compra_rapida():
+    data = request.get_json() or {}
+
+    categoria = data.get("categoria")
+    subcategoria = (data.get("subcategoria") or "").strip().lower()
+    nombre = (data.get("nombre") or "").strip()
+    fecha_str = data.get("fecha")
+
+    try:
+        cantidad = int(data.get("cantidad"))
+        precio_compra = float(data.get("precio_compra"))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Cantidad y precio de compra son obligatorios"}), 400
+
+    if categoria not in ("lavanderia", "vending") or not nombre:
+        return jsonify({"error": "Categoría y nombre son obligatorios"}), 400
+    if categoria == "vending" and not subcategoria:
+        return jsonify({"error": "La subcategoría es obligatoria en vending"}), 400
+    if cantidad <= 0 or precio_compra < 0:
+        return jsonify({"error": "Cantidad o precio no válidos"}), 400
+
+    try:
+        fecha = datetime.strptime(fecha_str, "%Y-%m-%d") if fecha_str else datetime.now()
+    except ValueError:
+        fecha = datetime.now()
+
+    # ¿Ya existe el artículo? (mismo nombre y categoría, sin distinguir mayúsculas)
+    producto = Producto.query.filter(
+        func.lower(Producto.nombre) == nombre.lower(),
+        Producto.categoria == categoria,
+    ).first()
+
+    creado = False
+    if producto:
+        producto.stock = (producto.stock or 0) + cantidad
+        producto.precio_compra = precio_compra
+    else:
+        creado = True
+        producto = Producto(
+            codigo=generar_codigo(subcategoria if categoria == "vending" else categoria, nombre),
+            nombre=nombre,
+            categoria=categoria,
+            subcategoria=subcategoria if categoria == "vending" else "",
+            stock=cantidad,
+            precio=float(data.get("precio_venta") or 0),
+            precio_compra=precio_compra,
+        )
+        db.session.add(producto)
+        db.session.flush()
+
+    compra = Compra()
+    compra.producto_id = producto.id
+    compra.cantidad = cantidad
+    compra.precio_unitario = precio_compra
+    compra.costo_total = round(precio_compra * cantidad, 2)
+    compra.fecha = fecha
+    db.session.add(compra)
+    db.session.commit()
+
+    return jsonify({
+        "message": "Producto creado" if creado else "Stock actualizado",
+        "creado": creado,
+        "producto": producto.nombre,
+        "codigo": producto.codigo,
+        "stock": producto.stock,
+    }), 201
